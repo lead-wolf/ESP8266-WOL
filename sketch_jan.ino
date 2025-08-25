@@ -2,7 +2,7 @@
 #include <ESP8266WebServer.h>
 #include <WiFiUdp.h>
 
-// Cấu trúc dữ liệu thiết bị (thêm trường broadcast)
+// Cấu trúc dữ liệu thiết bị
 struct Device {
   String name;
   String mac;
@@ -13,35 +13,18 @@ struct Device {
 
 const int NUM_DEVICES = 2;
 Device devices[NUM_DEVICES] = {
-  {"PC-1", "1c:1b:1a:aa:ee:11", "10.10.10.80", "10.10.10.255", 4000},
-  {"PC-2", "77:aaa:ff:bb:44:ee", "10.10.10.252", "10.10.10.255", 9},
+  {"PC-AN", "1c:1b:0d:a9:ee:78", "10.10.10.80", "10.10.10.255", 4000},
+  {"AN-SERVER", "70:5a:0f:b7:45:1e", "10.10.10.252", "10.10.10.255", 9},
 };
 
 // Thông tin mạng WiFi cố định
-const char* ssid = "SSID";
-const char* password = "PASSWORD";
+const char* ssid = "I'm Dev";
+const char* password = "Password";
 
- String correctPassword = "CORRECT_PASS"; // pass protected
- 
 // Khởi tạo Web Server
 ESP8266WebServer server(21001);
 WiFiUDP udp;
 unsigned long lastResetTime = 0;
-
-void handleRestartESP() {
-  String password = server.arg("password");
-
-  if (password != correctPassword) {
-    server.send(400, "text/plain", "Mật khẩu không đúng!");
-    Serial.println("Incorrect password for restart");
-    return;
-  }
-
-  server.send(200, "text/plain", "Khởi động lại thành công!");
-  Serial.println("Restarting ESP...");
-  delay(1000); // Đợi 1 giây để gửi phản hồi trước khi khởi động lại
-  ESP.restart(); // Khởi động lại ESP
-}
 
 bool isValidMAC(String mac) {
     int count = 0;
@@ -108,6 +91,7 @@ void sendWOL(String mac, String broadcast, int port) {
 // Hàm Xử lý POST request/sendWOL
 void handleSendWOL() {
     String password = server.arg("password");  
+    String correctPassword = "protected"; // pass protected
 
     if (password != correctPassword) {
         server.send(400, "text/plain", "Mật khẩu không đúng!");
@@ -174,7 +158,7 @@ void handleSendWOL() {
 void handleRoot() {
     String html = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">"
                   "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
-                  "<link rel=\"icon\" href=\"https://tban.id.vn/BinhAn.png\" type=\"image/png\">"
+                  "<link rel=\"icon\" href=\"https://cdn-icons-png.freepik.com/512/6329/6329326.png\" type=\"image/png\">"
                   "<title>WOL Controller</title>"
                   "<style>"
                   "body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f9; }"
@@ -190,7 +174,7 @@ void handleRoot() {
                   ".modal-content button:hover { background-color: #0056b3; }"
                   "</style>"
                   "</head><body style=\""
-                  "background-image: url(https://tban.id.vn/img_share/Desktop-Background-Black-on-Windows-PC.png);"
+                  "background-image: url(https://i.etsystatic.com/34157568/r/il/16822b/3670162370/il_fullxfull.3670162370_mz6y.jpg);"
                   "background-repeat: no-repeat;"
                   "background-size: cover;\">"
                   "<h1 style=\"font-size: 48px; margin-bottom: 50px;\">WOL Controller</h1>"
@@ -202,34 +186,20 @@ void handleRoot() {
 
         // Kiểm tra nếu tên chứa "PC"
         if (strstr(devices[i].name.c_str(), "PC") != NULL) {
-            imageUrl = "https://cdn-icons-png.flaticon.com/512/9711/9711115.png"; // Link ảnh cho PC
+            imageUrl = "https://cdn-icons-png.flaticon.com/512/9711/9711115.png"; 
         }
         // Kiểm tra nếu tên chứa "SERVER"
         else if (strstr(devices[i].name.c_str(), "SERVER") != NULL) {
-            imageUrl = "https://tban.id.vn/img_share/server.png"; // Link ảnh cho SERVER
+            imageUrl = "https://cdn-icons-png.flaticon.com/512/1508/1508901.png"; 
         } else {
-            imageUrl = "https://tban.id.vn/img_share/server.png"; // Ảnh mặc định
+            imageUrl = "https://assets.streamlinehq.com/image/private/w_300,h_300,ar_1/f_auto/v1/icons/c5/no-image-px759fvb06aw65eaaqpopg.png/no-image-ousebmandtg1ym1w6nntl.png"; 
         }
       
         html += "<div class=\"device\" onclick=\"openModal('" + devices[i].name + "', '" + devices[i].broadcast + "', '" + devices[i].port + "')\">"
-                "<img src=\"" + imageUrl + "\" alt=\"Device Icon\">" // Thay link ảnh bằng ảnh tùy chỉnh
+                "<img src=\"" + imageUrl + "\" alt=\"Device Icon\">" 
                 "<div class=\"device-name\">" + devices[i].name + "</div>"
                 "</div>";
     }
-
-    html += "<div class=\"device\" onclick=\"openRestartModal()\">"
-          "<img src=\"https://cdn-icons-png.flaticon.com/512/1828/1828490.png\" alt=\"Restart Icon\">" // Icon khởi động lại
-          "<div class=\"device-name\">Restart ESP</div>"
-          "</div>";
-
-    html += "<div id=\"restartModal\" class=\"modal\">"
-            "<div class=\"modal-content\">"
-            "<h2>Nhập Mật Khẩu</h2>"
-            "<input type=\"password\" id=\"restartPassword\" placeholder=\"Mật khẩu\">"
-            "<button onclick=\"submitRestart()\">Xác nhận</button>"
-            "<button onclick=\"closeRestartModal()\" style=\"background-color: #ccc; margin-left: 10px;\">Hủy</button>"
-            "</div>"
-            "</div>";
 
     html += "</div>"
 
@@ -249,7 +219,6 @@ void handleRoot() {
             "function openModal(device, broadcast, port) {"
             "  selectedDevice = { device, broadcast, port };"
             "  document.getElementById('modal').style.display = 'flex';"
-            "  document.getElementById('passwordInput').focus();"
             "}"
 
             "function closeModal() {"
@@ -272,40 +241,6 @@ void handleRoot() {
             "      closeModal();"
             "    });"
             "}"
-
-            "function openRestartModal() {"
-            "  document.getElementById('restartModal').style.display = 'flex';"
-            "  document.getElementById('restartPassword').focus();"
-            "}"
-            
-            "function closeRestartModal() {"
-            "  document.getElementById('restartModal').style.display = 'none';"
-            "  document.getElementById('restartPassword').value = ''; "
-            "}"
-            
-            "function submitRestart() {"
-            "  const password = document.getElementById('restartPassword').value;"
-            "  if (!password) {"
-            "    alert('Vui lòng nhập mật khẩu!');"
-            "    return;"
-            "  }"
-            
-            "  fetch('/restartESP', {"
-            "    method: 'POST',"
-            "    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },"
-            "    body: `password=${password}`"
-            "  })"
-            "    .then(response => response.text())"
-            "    .then(data => {"
-            "      alert(data);"
-            "      if (data.includes(\"Đang Khởi động lại ESP...\")) {"
-            "        closeRestartModal();"
-            "      }"
-            "    })"
-            "    .catch(error => alert(\"Có lỗi xảy ra khi gửi yêu cầu!\"));"
-            "}"
-
-            
             // Lắng nghe sự kiện bàn phím khi modal mở
             "document.addEventListener('keydown', function (event) {"
             "  const modal = document.getElementById('modal');"
@@ -314,14 +249,6 @@ void handleRoot() {
             "      sendWOL();"
             "    } else if (event.key === 'Escape') {"
             "      closeModal();"
-            "    }"
-            "  }"
-
-            "  if (restartModal.style.display === 'flex') {"
-            "    if (event.key === 'Enter') {"
-            "      submitRestart();"
-            "    } else if (event.key === 'Escape') {"
-            "      closeRestartModal();"
             "    }"
             "  }"
             "});"
@@ -348,8 +275,6 @@ void setup() {
 
   server.on("/", handleRoot);
   server.on("/sendWOL", HTTP_POST, handleSendWOL);
-  server.on("/restartESP", HTTP_POST, handleRestartESP);
-  
   server.begin();
   Serial.println("Web server started");
 
