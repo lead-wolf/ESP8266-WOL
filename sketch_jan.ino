@@ -13,13 +13,13 @@ struct Device {
 
 const int NUM_DEVICES = 2;
 Device devices[NUM_DEVICES] = {
-  {"PC-AN", "1c:1b:0d:a9:ee:78", "10.10.10.80", "10.10.10.255", 4000},
-  {"AN-SERVER", "70:5a:0f:b7:45:1e", "10.10.10.252", "10.10.10.255", 9},
+  {"PC-1", "1c:1b:1c:1d:ee:88", "10.10.10.10", "10.10.10.255", 4000},
+  {"PC-2", "70:50:00:77:44:11", "10.10.10.22", "10.10.10.255", 9},
 };
 
 // Thông tin mạng WiFi cố định
-const char* ssid = "I'm Dev";
-const char* password = "Password";
+const char* ssid = "ssid";
+const char* password = "pass";
 
 // Khởi tạo Web Server
 ESP8266WebServer server(21001);
@@ -91,7 +91,7 @@ void sendWOL(String mac, String broadcast, int port) {
 // Hàm Xử lý POST request/sendWOL
 void handleSendWOL() {
     String password = server.arg("password");  
-    String correctPassword = "protected"; // pass protected
+    String correctPassword = "password"; // pass protected
 
     if (password != correctPassword) {
         server.send(400, "text/plain", "Mật khẩu không đúng!");
@@ -163,18 +163,18 @@ void handleRoot() {
                   "<style>"
                   "body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f9; }"
                   ".device-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; }"
-                  ".device { width: 150px; height: 150px; border: 2px solid #ccc; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; background-color: #fff; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }"
+                  ".device { width: 150px; height: 150px; border: 2px solid #ccc; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; background-color: #ffffff21; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }"
                   ".device:hover { background-color: #e8e8e8; }"
                   ".device img { width: 80px; height: 80px; margin-bottom: 10px; }"
                   ".device-name { font-size: 18px; font-weight: bold; }"
                   ".modal { display: none; position: fixed; z-index: 10; left: 0; top: -50px; width: 100%; height: 110%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }"
-                  ".modal-content { background: white; padding: 20px; border-radius: 10px; text-align: center; width: 300px; }"
+                  ".modal-content { background: #e3dfc8; padding: 20px; border-radius: 10px; text-align: center; width: 300px; }"
                   ".modal-content input { width: 90%; padding: 10px; margin: 10px 0; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }"
                   ".modal-content button { padding: 10px 20px; font-size: 16px; background-color: #007BFF; color: white; border: none; border-radius: 5px; cursor: pointer; }"
                   ".modal-content button:hover { background-color: #0056b3; }"
                   "</style>"
                   "</head><body style=\""
-                  "background-image: url(https://i.etsystatic.com/34157568/r/il/16822b/3670162370/il_fullxfull.3670162370_mz6y.jpg);"
+                  "background-image: url(https://marketplace.canva.com/EAFHyccmd3I/1/0/1600w/canva-brown-and-green-illustration-desktop-wallpaper-uFoN-4UuMEk.jpg);"
                   "background-repeat: no-repeat;"
                   "background-size: cover;\">"
                   "<h1 style=\"font-size: 48px; margin-bottom: 50px;\">WOL Controller</h1>"
@@ -202,13 +202,19 @@ void handleRoot() {
     }
 
     html += "</div>"
+            "<div style=\"font-size:26px;margin-top:10px;font-weight:bold;display:none;\" id=noti>Thông báo:</div>"
+
 
             // Popup modal
             "<div id=\"modal\" class=\"modal\">"
             "<div class=\"modal-content\">"
             "<h2>Nhập Mật Khẩu</h2>"
             "<input type=\"password\" id=\"passwordInput\" placeholder=\"Mật khẩu\">"
-            "<button onclick=\"sendWOL()\">Gửi</button>"
+            "<p style=\"color:red;font-size:16px;display:none;\" id=errorEmtyPass>Vui Lòng Nhập Password</p>"
+            "</br>"
+            "<p style=\"color:red;font-size:16px;display:none;\" id=errorNoti>Mật khẩu không chính xác</p>"
+            "</br>"
+            "<button style=\"margin-top:5px;\" onclick=\"sendWOL()\">Gửi</button>"
             "<button onclick=\"closeModal()\" style=\"background-color: #ccc; margin-left: 10px;\">Hủy</button>"
             "</div>"
             "</div>"
@@ -219,6 +225,7 @@ void handleRoot() {
             "function openModal(device, broadcast, port) {"
             "  selectedDevice = { device, broadcast, port };"
             "  document.getElementById('modal').style.display = 'flex';"
+            "  document.getElementById('passwordInput').focus();"
             "}"
 
             "function closeModal() {"
@@ -227,20 +234,37 @@ void handleRoot() {
             "}"
 
             "function sendWOL() {"
+            "  document.getElementById('errorEmtyPass').style.display=\"none\";"
+            "  document.getElementById('errorNoti').style.display = \"none\";"
+            "  document.getElementById('noti').style.display = \"none\";"
             "  const password = document.getElementById('passwordInput').value;"
-            "  if (!password) { alert('Vui lòng nhập mật khẩu!'); return; }"
+            "  if (!password) { document.getElementById('errorEmtyPass').style.display = \"inline\"; document.getElementById('passwordInput').focus(); return; }"
             "  const formData = new FormData();"
             "  formData.append('device', selectedDevice.device);"
             "  formData.append('broadcast', selectedDevice.broadcast);"
             "  formData.append('port', selectedDevice.port);"
             "  formData.append('password', password);"
             "  fetch('/sendWOL', { method: 'POST', body: formData })"
-            "    .then(response => response.text())"
-            "    .then(data => {"
-            "      alert(data);"
-            "      closeModal();"
+            "    .then(response => {"
+            "      if (response.status == 400) {"
+            "        document.getElementById('errorNoti').style.display = \"inline\";"
+            "        document.getElementById('passwordInput').focus();"
+            "        return;"
+            "      } else if (response.ok) {"
+            "        document.getElementById('noti').style.display = \"block\";"
+            // "        document.getElementById('noti').innerText=\"Thông báo: \";"
+            "       closeModal();"
+            "      }"
+            "      return response.text();"
+            "    })"
+            "    .then(text => {"
+            "      if (text){ document.getElementById('noti').innerText=text;console.log(\"Server response:\", text);}"
+            "    })"
+            "    .catch(error => {"
+            "      console.error(\"Fetch error:\", error);"
             "    });"
-            "}"
+            " }"
+
             // Lắng nghe sự kiện bàn phím khi modal mở
             "document.addEventListener('keydown', function (event) {"
             "  const modal = document.getElementById('modal');"
