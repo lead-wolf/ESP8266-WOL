@@ -172,6 +172,8 @@ void handleRoot() {
                   ".modal-content input { width: 90%; padding: 10px; margin: 10px 0; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }"
                   ".modal-content button { padding: 10px 20px; font-size: 16px; background-color: #007BFF; color: white; border: none; border-radius: 5px; cursor: pointer; }"
                   ".modal-content button:hover { background-color: #0056b3; }"
+                  ".spinner { border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-left: 5px; }"
+                  "@keyframes spin { 0%   { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }"
                   "</style>"
                   "</head><body style=\""
                   "background-image: url(https://marketplace.canva.com/EAFHyccmd3I/1/0/1600w/canva-brown-and-green-illustration-desktop-wallpaper-uFoN-4UuMEk.jpg);"
@@ -211,10 +213,9 @@ void handleRoot() {
             "<h2>Nhập Mật Khẩu</h2>"
             "<input type=\"password\" id=\"passwordInput\" placeholder=\"Mật khẩu\">"
             "<p style=\"color:red;font-size:16px;display:none;\" id=errorEmtyPass>Vui Lòng Nhập Password</p>"
-            "</br>"
             "<p style=\"color:red;font-size:16px;display:none;\" id=errorNoti>Mật khẩu không chính xác</p>"
             "</br>"
-            "<button style=\"margin-top:5px;\" onclick=\"sendWOL()\">Gửi</button>"
+            "<button id=\"sendBtn\" style=\"margin-top:5px;\" onclick=\"sendWOL()\">Gửi</button>"
             "<button onclick=\"closeModal()\" style=\"background-color: #ccc; margin-left: 10px;\">Hủy</button>"
             "</div>"
             "</div>"
@@ -223,22 +224,31 @@ void handleRoot() {
             "let selectedDevice = {};"
 
             "function openModal(device, broadcast, port) {"
+            "  const btn = document.getElementById('sendBtn');"
             "  selectedDevice = { device, broadcast, port };"
             "  document.getElementById('modal').style.display = 'flex';"
             "  document.getElementById('passwordInput').focus();"
+            "  btn.disabled = false; btn.innerHTML = \"Gửi\";"
+            "  document.getElementById('errorEmtyPass').style.display=\"none\";"
+            "  document.getElementById('errorNoti').style.display = \"none\";"
             "}"
 
             "function closeModal() {"
+            "  const btn = document.getElementById('sendBtn');"
             "  document.getElementById('modal').style.display = 'none';"
             "  document.getElementById('passwordInput').value = '';"
+            "  btn.disabled = false; btn.innerHTML = \"Gửi\";"
             "}"
 
             "function sendWOL() {"
+            "  const btn = document.getElementById('sendBtn');"
+            "  btn.disabled = true;"
+            "  btn.innerHTML = 'Đang gửi <span class=\"spinner\"></span>';"
             "  document.getElementById('errorEmtyPass').style.display=\"none\";"
             "  document.getElementById('errorNoti').style.display = \"none\";"
             "  document.getElementById('noti').style.display = \"none\";"
             "  const password = document.getElementById('passwordInput').value;"
-            "  if (!password) { document.getElementById('errorEmtyPass').style.display = \"inline\"; document.getElementById('passwordInput').focus(); return; }"
+            "  if (!password) { document.getElementById('errorEmtyPass').style.display = \"inline\"; document.getElementById('passwordInput').focus(); btn.disabled = false; btn.innerHTML = \"Gửi\"; return; }"
             "  const formData = new FormData();"
             "  formData.append('device', selectedDevice.device);"
             "  formData.append('broadcast', selectedDevice.broadcast);"
@@ -249,10 +259,10 @@ void handleRoot() {
             "      if (response.status == 400) {"
             "        document.getElementById('errorNoti').style.display = \"inline\";"
             "        document.getElementById('passwordInput').focus();"
+            "        btn.disabled = false; btn.innerHTML = \"Gửi\";"
             "        return;"
             "      } else if (response.ok) {"
             "        document.getElementById('noti').style.display = \"block\";"
-            // "        document.getElementById('noti').innerText=\"Thông báo: \";"
             "       closeModal();"
             "      }"
             "      return response.text();"
@@ -281,8 +291,6 @@ void handleRoot() {
 
     server.send(200, "text/html", html);
 }
-
-
 
 void setup() {
   Serial.begin(115200);
